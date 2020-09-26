@@ -75,6 +75,8 @@ function toolchain(_buildDir, _libDir)
 			{ "orbis",           "Orbis"                      },
 			{ "riscv",           "RISC-V"                     },
 			{ "rpi",             "RaspberryPi"                },
+			{ "nx32",            "NX 32-bit"                  },
+			{ "nx64",            "NX 64-bit"                  },
 		},
 	}
 
@@ -94,6 +96,8 @@ function toolchain(_buildDir, _libDir)
 			{ "winstore100",   "Universal Windows App 10.0"      },
 			{ "durango",       "Durango"                         },
 			{ "orbis",         "Orbis"                           },
+			{ "nx32",          "NX 32-bit"                       },
+			{ "nx64",          "NX 64-bit"                       },
 		},
 	}
 
@@ -397,6 +401,28 @@ function toolchain(_buildDir, _libDir)
 			premake.gcc.ar  = "$(FREEDOM_E_SDK)/work/build/riscv-gnu-toolchain/riscv64-unknown-elf/prefix/bin/riscv64-unknown-elf-ar"
 			location (path.join(_buildDir, "projects", _ACTION .. "-riscv"))
 
+		elseif "nx32" == _OPTIONS["gcc"] or "nx64" == _OPTIONS["gcc"] then
+			if not os.getenv("NINTENDO_SDK_ROOT") then
+				print("Set NINTENDO_SDK_ROOT environment variable.")
+			end
+
+			local nxarch = "armv7l"
+			local nxfmt = "eabihf"
+			local buildsuffix = "-nx32"
+			if "nx64" == _OPTIONS["gcc"] then
+				nxarch = "aarch64"
+				nxfmt = "eld"
+				buildsuffix = "-nx64"
+			end
+
+			local nxToolchain = "$(NINTENDO_SDK_ROOT)/Compilers/NX/nx/" .. nxarch .. "/bin/"
+			local nxToolchainPrefix = nxarch .. "-nintendo-nx-" .. nxfmt .. "-"
+
+			premake.gcc.cc  = nxToolchain .. "clang"
+			premake.gcc.cxx = nxToolchain .. "clang++"
+			premake.gcc.ar  = nxToolChain .. nxToolchainPrefix  .. "ar"
+			location (path.join(_buildDir, "projects", _ACTION .. buildSuffix))
+
 		end
 	elseif _ACTION == "vs2012"
 		or _ACTION == "vs2013"
@@ -443,7 +469,22 @@ function toolchain(_buildDir, _libDir)
 
 			platforms { "Orbis" }
 			location (path.join(_buildDir, "projects", _ACTION .. "-orbis"))
+		elseif "nx32" == _OPTIONS["vs"] then
 
+			if not os.getenv("NINTENDO_SDK_ROOT") then
+				print("Set NINTENDO_SDK_ROOT environment variable.")
+			end
+
+			platforms { "NX32" }
+			location (path.join(_buildDir, "projects", _ACTION .. "-nx32"))
+		elseif "nx64" == _OPTIONS["vs"] then
+
+			if not os.getenv("NINTENDO_SDK_ROOT") then
+				print("Set NINTENDO_SDK_ROOT environment variable.")
+			end
+
+			platforms { "NX64" }
+			location (path.join(_buildDir, "projects", _ACTION .. "-nx64"))
 		elseif ("vs2012-xp") == _OPTIONS["vs"] then
 			premake.vstudio.toolset = ("v110_xp")
 			location (path.join(_buildDir, "projects", _ACTION .. "-xp"))
@@ -1211,6 +1252,22 @@ function toolchain(_buildDir, _libDir)
 			"-Wunused-value",
 			"-Wundef",
 			"--sysroot=$(FREEDOM_E_SDK)/work/build/riscv-gnu-toolchain/riscv64-unknown-elf/prefix/riscv64-unknown-elf",
+		}
+
+	configuration { "NX32" }
+		targetdir (path.join(_buildDir, "nx32/bin"))
+		objdir (path.join(_buildDir, "nx32/obj"))
+		libdirs { path.join(_libDir, "lib/nx32") }
+		propertysheets {
+			"$(NINTENDO_SDK_ROOT)/Build/Vc/NintendoSdkVcProjectSettings.props"
+		}
+
+	configuration { "NX64" }
+		targetdir (path.join(_buildDir, "nx64/bin"))
+		objdir (path.join(_buildDir, "nx64/obj"))
+		libdirs { path.join(_libDir, "lib/nx64") }
+		propertysheets {
+			"$(NINTENDO_SDK_ROOT)/Build/Vc/NintendoSdkVcProjectSettings.props"
 		}
 
 	configuration {} -- reset configuration
